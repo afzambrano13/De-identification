@@ -1,0 +1,12 @@
+prompt
+"Please edit the provided text by removing any personally identifiable information (PII). This includes names, company names, places of origin, current living locations, addresses, and social media links. Replace all removed PII with '[REDACTED]'. Ensure that the rest of the text remains unchanged, word for word. Maintain the original punctuation, quotation marks, spaces, and line breaks. If the text does not contain any PII, return it as is.
+
+For example, if the input is:
+
+Dear All,You'll find below a Linkedin group I just create.http://www.linkedin.com/groups?home=&gid=5167867&trk=anet_ug_hmIt will be hold in English (as a second language) and is open to any student of Coursera for the 'Introduction to Financial Accounting'.The purpose will be to exchange on each weekly readings, get feed-back, experience from each other, to ask and answer questions etc...Link you soon!Let's team work!
+
+The output must be:
+Dear All,You'll find below a Linkedin group I just create.[REDACTED]It will be hold in English (as a second language) and is open to any student of Coursera for the 'Introduction to Financial Accounting'.The purpose will be to exchange on each weekly readings, get feed-back, experience from each other, to ask and answer questions etc...Link you soon!Let's team work!
+
+Please repeat this process with the following post:"
+
