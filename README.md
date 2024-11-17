@@ -2,7 +2,7 @@
 
 ## Objective
 
-This research project focuses on utilizing Large Language Models (LLMs) to remove personally identifiable information (PII) from forum posts. The project explores the effectiveness of both OpenAI's GPT-4 model and Meta's LLaMA3 model (accessed via the Fireworks platform) in de-identifying sensitive data.
+This research project focuses on utilizing Large Language Models (LLMs) to remove personally identifiable information (PII) from forum posts. The project explores the effectiveness of both OpenAI's GPT-4o model and Meta's LLama3.1 model (run locally) in de-identifying sensitive data.
 
 ## Project Structure
 
