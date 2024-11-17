@@ -42,7 +42,7 @@ Before getting started, ensure you have the following:
 On Mac or Windows, go to the Ollama download page [here](https://ollama.com/download) and select your platform to download it, then double click the downloaded file to install Ollama.
 
 **Step 2:** Download and test run Llama 3.1
-On a terminal or console, run ```ollama pull llama3.1``` to download the Llama 3.1 8b chat model in the 4-bit quantized format with size about 4.7 GB. For better results, you can download Llama 3.1 70b, ```ollama pull llama3.1:70b```, but you will need around 128 of RAM to run it locally. You can check all the available models on the [Ollama web-page](https://ollama.com/search). If you decide to use a different model from Llama 3.1 8b you need to change the model name in the `de_identified_csv_generator.py` script
+On a terminal or console, run ```ollama pull llama3.1``` to download the Llama 3.1 8b chat model in the 4-bit quantized format with size about 4.7 GB. For better results, you can download Llama 3.1 70b, ```ollama pull llama3.1:70b```, but you will need around 128 of RAM to run it locally. You can check all the available models on the [Ollama web page](https://ollama.com/search). If you decide to use a different model from Llama 3.1 8b you need to change the model name in the `de_identified_csv_generator.py` script
 
 ## Getting Started
 
