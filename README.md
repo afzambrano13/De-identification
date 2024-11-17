@@ -26,7 +26,7 @@ Before getting started, ensure you have the following:
 
 - **Python Environment**: Python 3.6 or higher is recommended.
 - **OpenAI API Key**: Obtain an API key from OpenAI to access the GPT-4 model.
-- **Llama 3.1 Model**: Obtain LLaMA 3.1 8B model via Ollama.
+- **Llama 3.1 Model**: Obtain LLaMA 3.1 8B model via [Ollama](https://ollama.com/download).
 - **Python Packages**: Install the required packages using pip:
 
   ```bash
