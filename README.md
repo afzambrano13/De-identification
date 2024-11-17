@@ -49,7 +49,7 @@ On a terminal or console, run ```ollama pull llama3.1``` to download the Llama 3
 Here's how to initiate the project:
 
 **Step 1:** Organize Data
-Place your original files with PII in the original_files folder and human redacted files in human_redacted_files folder. **We have artificially created some sample files for your reference in the folder.**
+Place your original files with PII in the original_files folder and human redacted files in human_redacted_files folder. **We have artificially created some sample files in the folder for your reference.**
 
 **Step 2:** Run the `de_identified_csv_generator.py`
 Execute the de_identified_csv_generator script, providing the necessary input files and the output folder (which will be automatically created):
@@ -57,6 +57,6 @@ This script will process the files, remove PII, and generate an OpenAI de-identi
 
 **Step 3:** Run the `de_identified_csv_evaluator.py`
 To evaluate the accuracy of the de-identification process, run the De-identified CSV Evaluator script:
-This script will analyze the de-identified CSV files in the results folder and update the metrics csv with accuracy, precision, recall and kappa values. 
+This script will analyze the de-identified CSV files in the results folder and update the metrics csv with accuracy, precision, recall, and kappa values. 
 
 
