@@ -9,7 +9,7 @@ import json
 # User choice for the language model
 print("Choose the language model to use:")
 print("1. OpenAI GPT-4")
-print("2. Fireworks LLaMA")
+print("2. LLaMA")
 model_choice = input("Enter 1 or 2: ")
 
 # Set up API keys and clients based on the choice
