@@ -25,18 +25,21 @@ This research project focuses on utilizing Large Language Models (LLMs) to remov
 Before getting started, ensure you have the following:
 
 - **Python Environment**: Python 3.6 or higher is recommended.
-- **API Keys**:
-  - **OpenAI API Key**: Obtain an API key from OpenAI to access the GPT-4 model.
-  - **Fireworks API Key**: Obtain an API key from Fireworks to access the LLaMA model.
+- **OpenAI API Key**: Obtain an API key from OpenAI to access the GPT-4 model.
+- **Llama 3.1 Model**: Obtain LLaMA 3.1 8B model via Ollama.
 - **Python Packages**: Install the required packages using pip:
 
   ```bash
-  pip install openai fireworks pandas
+  pip install openai pandas
   ```
 
 - **Input Data**:
   - **original_files**: Place your original CSV files containing PII in this folder.
   - **human_redacted_files**: Place the corresponding human-redacted CSV files in this folder.
+
+## Downloading and Installing Llama 3.1 8B
+**Step 1:** Download Ollama
+On Mac or Windows, go to the Ollama download page [here](https://ollama.com/download) and select your platform to download it, then double click the downloaded file to install Ollama.
 
 ## Getting Started
 
