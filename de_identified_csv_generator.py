@@ -87,7 +87,7 @@ def api_call(post_text, prompt):
     try:
         message_content = f'{prompt}\n{post_text}'
         if api_provider == 'OpenAI':
-            client = OpenAI(api_key="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")
+            client = OpenAI(api_key=openai_api_key )
             response = client.chat.completions.create(
                 model=model_name,
                 messages=[
