@@ -3,23 +3,33 @@ import pandas as pd
 
 # Import both OpenAI and Fireworks libraries
 from openai import OpenAI
+from fireworks.client import Fireworks
 import requests
 import json
 
 # User choice for the language model
 print("Choose the language model to use:")
-print("1. OpenAI GPT-4")
-print("2. LLaMA")
-model_choice = input("Enter 1 or 2: ")
+print("1. OpenAI GPT-4o")
+print("2. Fireworks Llama 3.3")
+print("3. Local LLama 3.1 8B")
+model_choice = input("Enter 1, 2 or 3: ")
 
 # Set up API keys and clients based on the choice
 if model_choice == '1':
     # OpenAI GPT-4 setup
     openai_api_key = input("Please enter your OpenAI API key: ").strip()
     client = OpenAI(api_key=openai_api_key)
-    model_name = "gpt-4o"
+    model_name = "gpt-4o-2024-11-20"
     api_provider = 'OpenAI'
 elif model_choice == '2':
+    # Fireworks LLaMA setup
+    fireworks_api_key = os.getenv('FIREWORKS_API_KEY')  # Use environment variables
+    if not fireworks_api_key:
+        fireworks_api_key = input("Please enter your Fireworks API key: ").strip()
+    client = Fireworks(api_key=fireworks_api_key)
+    model_name = "accounts/fireworks/models/llama-v3p3-70b-instruct"
+    api_provider = 'Fireworks'
+elif model_choice == '3':
     model_name = "llama3.1"
     api_provider = 'Llama'
     url = "http://localhost:11434/api/chat"
@@ -71,9 +81,15 @@ if api_provider == 'OpenAI':
     except Exception as e:
         print("Error reading prompts.csv:", str(e))
         exit()
-elif api_provider == 'Llama':
+elif api_provider == 'Fireworks':
     try:
         prompt_df = pd.read_csv('PromptsLlama.csv', encoding='utf-8')
+    except Exception as e:
+        print("Error reading prompts.csv:", str(e))
+        exit()
+elif api_provider == 'Llama':
+    try:
+        prompt_df = pd.read_csv('PromptsLocalLlama.csv', encoding='utf-8')
     except Exception as e:
         print("Error reading prompts.csv:", str(e))
         exit()
@@ -87,7 +103,7 @@ def api_call(post_text, prompt):
     try:
         message_content = f'{prompt}\n{post_text}'
         if api_provider == 'OpenAI':
-            client = OpenAI(api_key=openai_api_key )
+            client = OpenAI(api_key=openai_api_key)
             response = client.chat.completions.create(
                 model=model_name,
                 messages=[
@@ -97,6 +113,16 @@ def api_call(post_text, prompt):
                 max_tokens=1000
             )
             return response.choices[0].message.content
+        elif api_provider == 'Fireworks':
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": message_content}
+                ],
+                max_tokens=1000
+            )
+            return response.choices[0].message.content.strip()
         elif api_provider == 'Llama':
             response = llama3(message_content)
             return response

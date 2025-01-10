@@ -1,6 +1,11 @@
 import pandas as pd
 import os
 import string
+from collections import Counter
+
+#TODO Specify as AZ if want to use alternative counting method for tp, tn, fp, fn
+countstrategy='AZ'
+
 
 # Specify the relative folder paths for redacted files
 openai_output_folder = 'results/OpenAI_redacted_files/'
@@ -9,6 +14,50 @@ human_redacted_folder = 'human_redacted_files/'
 
 def count_redacted(text):
     return text.count("[REDACTED]")
+
+def get_true_false_positives_negatives(human_redacted, model_redacted):
+    # Count the occurrences of each element in both lists
+    countHuman = Counter(human_redacted)
+    countModel = Counter(model_redacted)
+    
+    # Find common elements (minimum count in both lists)
+    common_elements = {key: min(countHuman[key], countModel[key]) for key in countHuman.keys() & countModel.keys()}
+    
+    # Find unique elements in list1 (elements not in list2 or with excess counts)
+    unique_in_human = {key: countHuman[key] - common_elements.get(key, 0) for key in countHuman}
+    unique_in_human = {key: value for key, value in unique_in_human.items() if value > 0}
+    
+    # Find unique elements in list2 (elements not in list1 or with excess counts)
+    unique_in_model = {key: countModel[key] - common_elements.get(key, 0) for key in countModel}
+    unique_in_model = {key: value for key, value in unique_in_model.items() if value > 0}
+    
+    true_positives=sum(common_elements.values())
+    false_positives=sum(unique_in_model.values())
+    false_negatives=sum(unique_in_human.values())
+    
+    return true_positives, false_positives, false_negatives
+    
+def get_replaced_strings(original_list, redacted_list):
+    replaced_strings = []
+    original_index = 0
+    redacted_index = 0
+
+    while redacted_index < len(redacted_list) and original_index < len(original_list):
+        if redacted_list[redacted_index] == "REDACTED":
+            # Handle the case where a single word was replaced
+            replaced_strings.append(original_list[original_index])
+            original_index += 1
+            redacted_index += 1
+        else:
+            # Skip matching elements
+            original_element = original_list[original_index]
+            redacted_element = redacted_list[redacted_index]
+            # Check for cases where original might have merged words
+            if original_element.replace(redacted_element, "") == "" or redacted_element in original_element:
+                original_index += 1
+            redacted_index += 1
+
+    return replaced_strings
 
 def clean_text(text):
     # Checks if text is a string, converts to string if not
@@ -24,6 +73,7 @@ def clean_text(text):
 
 def add_word_lists_to_df(df, model_type):
     df['word_list_human_redacted'] = df['post_text_human_redacted'].apply(clean_text)
+    df['word_list_original'] = df['post_text_original'].apply(clean_text)
     if model_type == 'OpenAI':
         df['word_list_model_redacted'] = df['post_text_OpenAI_redacted'].apply(clean_text)
         df = df.apply(adjust_model_output, axis=1, args=(model_type,))
@@ -88,29 +138,48 @@ def calculate_metrics(df):
         row_fn = 0
         row_tn = 0
 
+        original_words = row['word_list_original']
         human_words = row['word_list_human_redacted']
         model_words = row['word_list_model_redacted']
 
-        # Ensure both lists have the same length
-        max_len = max(len(human_words), len(model_words))
-        human_words.extend([''] * (max_len - len(human_words)))
-        model_words.extend([''] * (max_len - len(model_words)))
-
-        for hw, mw in zip(human_words, model_words):
-            total_words += 1
-            if hw == mw and hw == 'REDACTED':
-                total_true_positives += 1
-                row_tp += 1
-            elif hw != mw and hw != 'REDACTED' and mw == 'REDACTED':
-                total_false_positives += 1
-                row_fp += 1
-            elif hw != mw and hw == 'REDACTED' and mw != 'REDACTED':
-                total_false_negatives += 1
-                row_fn += 1
-            else:
-                total_true_negatives += 1
-                row_tn += 1
-
+        
+        if countstrategy=='AZ':
+            human_redacted = get_replaced_strings(original_words, human_words)
+            human_redacted = [element for element in human_redacted if element != ""]
+            model_redacted = get_replaced_strings(original_words, model_words)
+            model_redacted = [element for element in model_redacted if element != ""]
+            
+            row_tp, row_fp, row_fn = get_true_false_positives_negatives(human_redacted, model_redacted)
+            
+            row_tn = len(human_words)-row_tp-row_fp-row_fn
+            
+            total_true_positives+=row_tp
+            total_false_positives+=row_fp
+            total_false_negatives+=row_fn
+            total_true_negatives+=row_tn
+            total_words+=len(human_words)
+        else:
+            # Ensure both lists have the same length
+            max_len = max(len(human_words), len(model_words))
+            human_words.extend([''] * (max_len - len(human_words)))
+            model_words.extend([''] * (max_len - len(model_words)))  
+        
+        
+            for hw, mw in zip(human_words, model_words):
+                total_words += 1
+                if hw == mw and hw == 'REDACTED':
+                    total_true_positives += 1
+                    row_tp += 1
+                elif hw != mw and hw != 'REDACTED' and mw == 'REDACTED':
+                    total_false_positives += 1
+                    row_fp += 1
+                elif hw != mw and hw == 'REDACTED' and mw != 'REDACTED':
+                    total_false_negatives += 1
+                    row_fn += 1
+                else:
+                    total_true_negatives += 1
+                    row_tn += 1
+            
         tp_counts.append(row_tp)
         fp_counts.append(row_fp)
         fn_counts.append(row_fn)
@@ -119,6 +188,7 @@ def calculate_metrics(df):
         df.at[_, 'true_negatives'] = row_tn
         df.at[_, 'false_positives'] = row_fp
         df.at[_, 'false_negatives'] = row_fn
+
 
     # Avoid division by zero
     if (total_true_positives + total_false_positives) == 0:
@@ -157,7 +227,7 @@ prompt_df = pd.read_csv('prompts.csv', encoding_errors='ignore')
 all_metrics = []
 
 # Process files for both OpenAI and Llama
-for model_type, output_folder in [('OpenAI', openai_output_folder), ('Llama', llama_output_folder)]:
+for model_type, output_folder in [('OpenAI', openai_output_folder), ('Fireworks', llama_output_folder), ('Llama', llama_output_folder)]:
     # Ensure output directory exists
     if not os.path.exists(output_folder):
         print(f"Output folder {output_folder} does not exist. Skipping {model_type} files.")
@@ -197,7 +267,7 @@ for model_type, output_folder in [('OpenAI', openai_output_folder), ('Llama', ll
         df['false_negatives'] = fn_counts
 
         print(f"Updated Metrics for {original_file_name}, Prompt {prompt_number}, Model {model_type}: "
-              f"Accuracy: {accuracy:.2f}, Precision: {precision:.2f}, Recall: {recall:.2f}, Kappa: {kappa:.2f}")
+              f"Accuracy: {accuracy:.3f}, Precision: {precision:.3f}, Recall: {recall:.3f}, Kappa: {kappa:.3f}")
 
         # Save updated DataFrame
         df.to_csv(file_path, index=False)
