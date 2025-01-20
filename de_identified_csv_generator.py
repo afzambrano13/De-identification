@@ -26,7 +26,6 @@ elif model_choice == '2':
     fireworks_api_key = os.getenv('FIREWORKS_API_KEY')  # Use environment variables
     if not fireworks_api_key:
         fireworks_api_key = input("Please enter your Fireworks API key: ").strip()
-    client = Fireworks(api_key=fireworks_api_key)
     model_name = "accounts/fireworks/models/llama-v3p3-70b-instruct"
     api_provider = 'Fireworks'
 elif model_choice == '3':
@@ -108,21 +107,47 @@ def api_call(post_text, prompt):
                 model=model_name,
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": message_content}
+                    {"role": "user", "content": message_content},
+                    
                 ],
+                temperature=0,
                 max_tokens=1000
             )
             return response.choices[0].message.content
         elif api_provider == 'Fireworks':
+            url = "https://api.fireworks.ai/inference/v1/chat/completions"
+            payload = {
+              "model": "accounts/fireworks/models/llama-v3p3-70b-instruct",
+              "max_tokens": 16384,
+              "temperature": 0,
+              "messages": [
+                {
+                  "role": "user",
+                  "content": message_content
+                }
+              ]
+            }
+            headers = {
+              "Accept": "application/json",
+              "Content-Type": "application/json",
+              "Authorization": "Bearer " + fireworks_api_key
+            }
+            response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
+            response_dict = json.loads(response.text)
+            message_content = response_dict["choices"][0]["message"]["content"]
+            """
+            client = Fireworks(api_key=fireworks_api_key)
             response = client.chat.completions.create(
                 model=model_name,
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": message_content}
                 ],
+                temperature=0,
                 max_tokens=1000
             )
-            return response.choices[0].message.content.strip()
+            """
+            return message_content
         elif api_provider == 'Llama':
             response = llama3(message_content)
             return response

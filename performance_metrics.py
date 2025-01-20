@@ -11,11 +11,12 @@ import os
 
 # Specify the relative folder paths for redacted files
 openai_output_folder = 'corrected_results/OpenAI_redacted_files/'
+fireworks_output_folder = 'corrected_results/Fireworks_redacted_files/'
 llama_output_folder = 'corrected_results/Llama_redacted_files/'
 
 all_metrics = []
 # Process files for both OpenAI and Llama
-for model_type, output_folder in [('OpenAI', openai_output_folder), ('Fireworks', llama_output_folder), ('Llama', llama_output_folder)]:
+for model_type, output_folder in [('OpenAI', openai_output_folder), ('Fireworks', fireworks_output_folder), ('Llama', llama_output_folder)]:
     # Ensure output directory exists
     if not os.path.exists(output_folder):
         print(f"Output folder {output_folder} does not exist. Skipping {model_type} files.")
@@ -82,7 +83,13 @@ for model_type, output_folder in [('OpenAI', openai_output_folder), ('Fireworks'
             'Kappa': kappa
         })
 
+all_metrics_df = pd.DataFrame(all_metrics)
 
+# Ensure results directory exists
+if not os.path.exists('corrected_results'):
+    os.makedirs('corrected_results')
 
+# Save all metrics to a CSV file
+all_metrics_df.to_csv('corrected_results/metrics_combined.csv', index=False)
 
 

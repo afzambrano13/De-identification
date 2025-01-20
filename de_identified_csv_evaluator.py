@@ -10,6 +10,7 @@ countstrategy='AZ'
 # Specify the relative folder paths for redacted files
 openai_output_folder = 'results/OpenAI_redacted_files/'
 llama_output_folder = 'results/Llama_redacted_files/'
+fireworks_output_folder = 'results/Fireworks_redacted_files/'
 human_redacted_folder = 'human_redacted_files/'
 
 def count_redacted(text):
@@ -76,6 +77,9 @@ def add_word_lists_to_df(df, model_type):
     df['word_list_original'] = df['post_text_original'].apply(clean_text)
     if model_type == 'OpenAI':
         df['word_list_model_redacted'] = df['post_text_OpenAI_redacted'].apply(clean_text)
+        df = df.apply(adjust_model_output, axis=1, args=(model_type,))
+    elif model_type == 'Fireworks':
+        df['word_list_model_redacted'] = df['post_text_Fireworks_redacted'].apply(clean_text)
         df = df.apply(adjust_model_output, axis=1, args=(model_type,))
     elif model_type == 'Llama':
         df['word_list_model_redacted'] = df['post_text_Llama_redacted'].apply(clean_text)
@@ -227,7 +231,7 @@ prompt_df = pd.read_csv('prompts.csv', encoding_errors='ignore')
 all_metrics = []
 
 # Process files for both OpenAI and Llama
-for model_type, output_folder in [('OpenAI', openai_output_folder), ('Fireworks', llama_output_folder), ('Llama', llama_output_folder)]:
+for model_type, output_folder in [('OpenAI', openai_output_folder), ('Fireworks', fireworks_output_folder), ('Llama', llama_output_folder)]:
     # Ensure output directory exists
     if not os.path.exists(output_folder):
         print(f"Output folder {output_folder} does not exist. Skipping {model_type} files.")
@@ -271,6 +275,9 @@ for model_type, output_folder in [('OpenAI', openai_output_folder), ('Fireworks'
 
         # Save updated DataFrame
         df.to_csv(file_path, index=False)
+        
+        # Save updated DataFrame
+        df.to_csv('corrected_'+file_path, index=False)
 
         # Store metrics in a list
         all_metrics.append({
