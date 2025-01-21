@@ -1,9 +1,10 @@
+# -*- coding: utf-8 -*-
+
 import os
 import pandas as pd
 
 # Import both OpenAI and Fireworks libraries
 from openai import OpenAI
-from fireworks.client import Fireworks
 import requests
 import json
 
@@ -176,6 +177,7 @@ for original_file in original_files:
                 prompt = row['prompt']
                 # Make a copy of the original DataFrame to avoid overwriting previous results
                 temp_df = original_df.copy()
+                temp_df['id'] = temp_df.index
                 for row_idx in temp_df.index:
                     post_text=temp_df.loc[row_idx, 'post_text_original']
                     post_text_response = api_call(post_text, prompt)
@@ -188,7 +190,7 @@ for original_file in original_files:
                 # Saves the CSV for the current prompt
                 csv_filename = f'{original_file.replace(".csv", "")}_prompt{index+1}_{api_provider.lower()}.csv'
                 output_file_path = os.path.join(output_folder, csv_filename)
-                temp_df.to_csv(output_file_path, index=False)
+                temp_df.to_csv(output_file_path, encoding='utf-8', index=False)
                 print(f"Saved file {output_file_path} for prompt {index+1}")
 
         except Exception as e:

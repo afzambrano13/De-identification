@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import pandas as pd
 import os
 import string
@@ -5,7 +7,6 @@ from collections import Counter
 
 #TODO Specify as AZ if want to use alternative counting method for tp, tn, fp, fn
 countstrategy='AZ'
-
 
 # Specify the relative folder paths for redacted files
 openai_output_folder = 'results/OpenAI_redacted_files/'
@@ -17,49 +18,47 @@ def count_redacted(text):
     return text.count("[REDACTED]")
 
 def get_true_false_positives_negatives(human_redacted, model_redacted):
-    # Count the occurrences of each element in both lists
-    countHuman = Counter(human_redacted)
-    countModel = Counter(model_redacted)
-    
-    # Find common elements (minimum count in both lists)
-    common_elements = {key: min(countHuman[key], countModel[key]) for key in countHuman.keys() & countModel.keys()}
-    
-    # Find unique elements in list1 (elements not in list2 or with excess counts)
-    unique_in_human = {key: countHuman[key] - common_elements.get(key, 0) for key in countHuman}
-    unique_in_human = {key: value for key, value in unique_in_human.items() if value > 0}
-    
-    # Find unique elements in list2 (elements not in list1 or with excess counts)
-    unique_in_model = {key: countModel[key] - common_elements.get(key, 0) for key in countModel}
-    unique_in_model = {key: value for key, value in unique_in_model.items() if value > 0}
-    
-    true_positives=sum(common_elements.values())
-    false_positives=sum(unique_in_model.values())
-    false_negatives=sum(unique_in_human.values())
-    
-    return true_positives, false_positives, false_negatives
-    
-def get_replaced_strings(original_list, redacted_list):
-    replaced_strings = []
-    original_index = 0
-    redacted_index = 0
-
-    while redacted_index < len(redacted_list) and original_index < len(original_list):
-        if redacted_list[redacted_index] == "REDACTED":
-            # Handle the case where a single word was replaced
-            replaced_strings.append(original_list[original_index])
-            original_index += 1
-            redacted_index += 1
+    fp=0
+    fn=0
+    tp=0
+    tn=0
+    human_redacted = [item.lower() for item in human_redacted]
+    model_redacted = [item.lower() for item in model_redacted]
+    for i in range(len(human_redacted)):
+        wordS1=human_redacted[i]
+        if wordS1!='redacted':
+            #If word is still there after redaction for both, it was a true negative
+            if wordS1 in model_redacted:
+                index=model_redacted.index(wordS1)
+                tn+=1
+                if index<3:
+                    del model_redacted[:index+1]
+            #If word was not redacted in the ground truth but eliminated by the llm, it is a false positive
+            else:
+                if len(model_redacted)!=0:
+                    wordS2=model_redacted[0]
+                    #Check cases when there was no space in the middle of 2 words
+                    if wordS2 in wordS1:
+                        tn+=1
+                        index=model_redacted.index(wordS2)
+                        del model_redacted[:index+1]
+                    elif wordS1 in wordS2:
+                        tn+=1
+                        model_redacted[0]=wordS2.replace(wordS1, "")
+                    else:
+                        fp+=1
         else:
-            # Skip matching elements
-            original_element = original_list[original_index]
-            redacted_element = redacted_list[redacted_index]
-            # Check for cases where original might have merged words
-            if original_element.replace(redacted_element, "") == "" or redacted_element in original_element:
-                original_index += 1
-            redacted_index += 1
-
-    return replaced_strings
-
+            if len(model_redacted)!=0:
+                wordS2=model_redacted[0]
+                #If next word in the llm is also redacted it is a true positive
+                if wordS2=='redacted':
+                    tp+=1
+                #If next word was not redacted, it is a false negative
+                else:
+                    fn+=1
+    
+    return tp, tn, fp, fn
+    
 def clean_text(text):
     # Checks if text is a string, converts to string if not
     if not isinstance(text, str):
@@ -145,44 +144,14 @@ def calculate_metrics(df):
         original_words = row['word_list_original']
         human_words = row['word_list_human_redacted']
         model_words = row['word_list_model_redacted']
-
-        
-        if countstrategy=='AZ':
-            human_redacted = get_replaced_strings(original_words, human_words)
-            human_redacted = [element for element in human_redacted if element != ""]
-            model_redacted = get_replaced_strings(original_words, model_words)
-            model_redacted = [element for element in model_redacted if element != ""]
             
-            row_tp, row_fp, row_fn = get_true_false_positives_negatives(human_redacted, model_redacted)
-            
-            row_tn = len(human_words)-row_tp-row_fp-row_fn
-            
-            total_true_positives+=row_tp
-            total_false_positives+=row_fp
-            total_false_negatives+=row_fn
-            total_true_negatives+=row_tn
-            total_words+=len(human_words)
-        else:
-            # Ensure both lists have the same length
-            max_len = max(len(human_words), len(model_words))
-            human_words.extend([''] * (max_len - len(human_words)))
-            model_words.extend([''] * (max_len - len(model_words)))  
+        row_tp, row_tn, row_fp, row_fn = get_true_false_positives_negatives(human_words, model_words)
         
-        
-            for hw, mw in zip(human_words, model_words):
-                total_words += 1
-                if hw == mw and hw == 'REDACTED':
-                    total_true_positives += 1
-                    row_tp += 1
-                elif hw != mw and hw != 'REDACTED' and mw == 'REDACTED':
-                    total_false_positives += 1
-                    row_fp += 1
-                elif hw != mw and hw == 'REDACTED' and mw != 'REDACTED':
-                    total_false_negatives += 1
-                    row_fn += 1
-                else:
-                    total_true_negatives += 1
-                    row_tn += 1
+        total_true_positives+=row_tp
+        total_false_positives+=row_fp
+        total_false_negatives+=row_fn
+        total_true_negatives+=row_tn
+        total_words+=len(human_words)
             
         tp_counts.append(row_tp)
         fp_counts.append(row_fp)
@@ -242,7 +211,17 @@ for model_type, output_folder in [('OpenAI', openai_output_folder), ('Fireworks'
     for file in all_csv_files:
         file_path = os.path.join(output_folder, file)
         df = pd.read_csv(file_path, encoding='utf-8', encoding_errors='ignore')
-
+        df = df.replace({'�': ' '}, regex=True)
+        df = df.replace({'&nbsp;': ' '}, regex=True)
+        df = df.replace({'&amp;': '&'}, regex=True)
+        df = df.replace({'&quot;': '"'}, regex=True)
+        df = df.replace({'&#39;': ' '}, regex=True)
+        df = df.replace({'Ì¢Â‰': ' '}, regex=True)
+        df = df.replace({'Ì¢Â': ' '}, regex=True)
+        df = df.replace({'Ì¢': ' '}, regex=True)
+        df = df.replace({'Ûª': ' '}, regex=True)
+        df = df.replace({'http': ' '}, regex=True)
+        
         # Extract original file name and prompt number
         prompt_number_part = file.split('_')[-2]
         prompt_number = int(prompt_number_part.replace('prompt', ''))
@@ -255,6 +234,16 @@ for model_type, output_folder in [('OpenAI', openai_output_folder), ('Fireworks'
 
         # Read human redacted file
         df_human = pd.read_csv(human_file_path, encoding='utf-8', encoding_errors='ignore')
+        df = df.replace({'�': ' '}, regex=True)
+        df = df.replace({'&nbsp;': ' '}, regex=True)
+        df = df.replace({'&amp;': '&'}, regex=True)
+        df = df.replace({'&quot;': '"'}, regex=True)
+        df = df.replace({'&#39;': ' '}, regex=True)
+        df = df.replace({'Ì¢Â‰': ' '}, regex=True)
+        df = df.replace({'Ì¢Â': ' '}, regex=True)
+        df = df.replace({'Ì¢': ' '}, regex=True)
+        df = df.replace({'Ûª': ' '}, regex=True)
+        df_human['id'] = df_human.index
         if 'post_text_human_redacted' not in df.columns:
             df = pd.merge(df, df_human[['id', 'post_text_human_redacted']], on='id')
 
