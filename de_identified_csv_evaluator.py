@@ -14,7 +14,7 @@ llama_output_folder = 'results/Llama_redacted_files/'
 fireworks_output_folder = 'results/Fireworks_redacted_files/'
 human_redacted_folder = 'human_redacted_files/'
 
-# Ensure results directory for correcting exists
+# Ensure directory for correcting results exists
 if not os.path.exists('corrected_results'):
     os.makedirs('corrected_results')
 
