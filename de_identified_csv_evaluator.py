@@ -14,6 +14,10 @@ llama_output_folder = 'results/Llama_redacted_files/'
 fireworks_output_folder = 'results/Fireworks_redacted_files/'
 human_redacted_folder = 'human_redacted_files/'
 
+# Ensure results directory for correcting exists
+if not os.path.exists('corrected_results'):
+    os.makedirs('corrected_results')
+
 def count_redacted(text):
     return text.count("[REDACTED]")
 
@@ -282,9 +286,6 @@ for model_type, output_folder in [('OpenAI', openai_output_folder), ('Fireworks'
 # Create a DataFrame with all metrics
 all_metrics_df = pd.DataFrame(all_metrics)
 
-# Ensure results directory exists
-if not os.path.exists('results'):
-    os.makedirs('results')
 
 # Save all metrics to a CSV file
 all_metrics_df.to_csv('results/metrics_combined.csv', index=False)
